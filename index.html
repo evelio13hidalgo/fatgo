@@ -4,12 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
   <header class="topbar">
     <div class="logo">Fat<span>go</span></div>
+    <nav class="nav hidden" id="top-nav">
+      <a href="#plan">Plan</a>
+      <a href="#workouts">Workouts</a>
+      <a href="#library">Library</a>
+      <a href="#food">Food</a>
+      <a href="#progress">Progress</a>
+    </nav>
     <button id="edit-profile-btn" class="ghost-btn hidden">Edit profile</button>
   </header>
 
@@ -80,12 +87,23 @@
     <h1 id="greeting">Your plan</h1>
     <p class="sub" id="goal-line"></p>
 
-    <!-- Targets -->
-    <div class="stat-row">
-      <div class="stat card"><div class="stat-num" id="stat-cals">—</div><div class="stat-label">calories / day</div></div>
-      <div class="stat card"><div class="stat-num" id="stat-protein">—</div><div class="stat-label">g protein</div></div>
-      <div class="stat card"><div class="stat-num" id="stat-fat">—</div><div class="stat-label">g fat</div></div>
-      <div class="stat card"><div class="stat-num" id="stat-carbs">—</div><div class="stat-label">g carbs</div></div>
+    <!-- Hero: today ring + targets -->
+    <div class="hero card" id="plan">
+      <div class="ring-wrap">
+        <div class="ring" id="cal-ring">
+          <div class="ring-center">
+            <div class="ring-num" id="ring-kcal">0</div>
+            <div class="ring-label" id="ring-label">kcal today</div>
+          </div>
+        </div>
+        <p class="fine ring-hint" id="ring-hint">Log food below to fill the ring</p>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num" id="stat-cals">—</div><div class="stat-label">calories / day</div></div>
+        <div class="stat"><div class="stat-num" id="stat-protein">—</div><div class="stat-label">g protein</div></div>
+        <div class="stat"><div class="stat-num" id="stat-fat">—</div><div class="stat-label">g fat</div></div>
+        <div class="stat"><div class="stat-num" id="stat-carbs">—</div><div class="stat-label">g carbs</div></div>
+      </div>
     </div>
     <p class="fine" id="tdee-line"></p>
 
@@ -95,12 +113,12 @@
     <div class="card" id="timeline"></div>
 
     <!-- Workouts -->
-    <h2>This week's workouts</h2>
+    <h2 id="workouts">This week's workouts</h2>
     <p class="sub">Tap any exercise to see how it's done.</p>
     <div id="workout-list" class="workout-grid"></div>
 
     <!-- Exercise library -->
-    <h2>Exercise library</h2>
+    <h2 id="library">Exercise library</h2>
     <p class="sub">873 exercises with photo demos, target muscles, and step-by-step instructions. Filter by what you have and what you want to train.</p>
     <div class="card">
       <div class="lib-controls">
@@ -122,7 +140,7 @@
     </div>
 
     <!-- Food lookup + intake tracker -->
-    <h2>Track today's food</h2>
+    <h2 id="food">Track today's food</h2>
     <p class="sub">Search 7,800 foods from the USDA database and log what you eat — Fatgo counts it against your daily targets.</p>
     <div class="card">
       <input type="search" id="food-search" placeholder="Search foods… e.g. chicken breast roasted">
@@ -134,7 +152,7 @@
     </div>
 
     <!-- Weight log -->
-    <h2>Track your progress</h2>
+    <h2 id="progress">Track your progress</h2>
     <div class="card">
       <form id="log-form" class="log-row">
         <input type="number" id="log-weight" step="0.1" min="35" max="250" placeholder="Today's weight (kg)" required>
@@ -155,6 +173,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

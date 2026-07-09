@@ -214,6 +214,7 @@ function showDashboard(p) {
   $("setup").classList.add("hidden");
   $("dashboard").classList.remove("hidden");
   $("edit-profile-btn").classList.remove("hidden");
+  $("top-nav").classList.remove("hidden");
 
   const t = targets(p);
 
@@ -503,6 +504,17 @@ function renderIntake() {
       <button type="button" class="ghost-btn intake-del" data-del="${i}">✕</button>
     </li>`).join("");
   $("intake-hint").classList.toggle("hidden", it.items.length > 0);
+
+  // hero calorie ring
+  const eaten = Math.round(sum("kcal"));
+  const pct = Math.min(100, (eaten / t.calories) * 100);
+  const col = eaten > t.calories * 1.05 ? "#f59e0b" : "var(--accent)";
+  $("cal-ring").style.background = `conic-gradient(${col} ${pct}%, #1c2129 0)`;
+  $("ring-kcal").textContent = eaten;
+  $("ring-label").textContent = `of ${t.calories} kcal`;
+  $("ring-hint").textContent = eaten
+    ? (eaten > t.calories ? `${eaten - t.calories} kcal over target` : `${t.calories - eaten} kcal left today`)
+    : "Log food below to fill the ring";
 }
 
 /* --- events --- */
@@ -585,6 +597,7 @@ $("edit-profile-btn").addEventListener("click", () => {
   }
   $("dashboard").classList.add("hidden");
   $("setup").classList.remove("hidden");
+  $("top-nav").classList.add("hidden");
 });
 
 $("log-form").addEventListener("submit", (e) => {
