@@ -241,6 +241,49 @@ canvas { width: 100%; height: auto; }
 .fine a { color: var(--muted); }
 .fine a:hover { color: var(--accent); }
 
+/* --- food lookup + intake tracker --- */
+#food-search { margin-top: 0; }
+#food-results { margin-top: 10px; }
+
+.food-hit {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.food-hit:hover, .food-hit.open { border-color: var(--accent); }
+.food-hit-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.food-hit-name { font-size: 0.9rem; font-weight: 600; line-height: 1.35; }
+.food-hit-meta { font-size: 0.78rem; color: var(--muted); }
+.food-hit-plus { color: var(--accent); font-size: 1.2rem; font-weight: 700; }
+
+.food-add {
+  display: grid;
+  grid-template-columns: 1fr 80px auto;
+  gap: 8px;
+  margin-top: 10px;
+  cursor: default;
+}
+.food-add select, .food-add input { margin-top: 0; font-size: 0.88rem; }
+.food-add .primary-btn { width: auto; margin-top: 0; padding: 8px 18px; }
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 120px;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0;
+}
+.bar-label { font-size: 0.8rem; color: var(--muted); text-transform: capitalize; }
+.bar { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; height: 12px; overflow: hidden; }
+.bar-fill { background: var(--accent); height: 100%; border-radius: 20px; transition: width 0.3s; }
+.bar-fill.over { background: #f59e0b; }
+.bar-nums { font-size: 0.78rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+.intake-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.intake-del { padding: 2px 8px; font-size: 0.75rem; }
+
 /* --- exercise modal --- */
 .modal {
   position: fixed;

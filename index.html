@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -121,6 +121,18 @@
       <ul class="food-list" id="food-list"></ul>
     </div>
 
+    <!-- Food lookup + intake tracker -->
+    <h2>Track today's food</h2>
+    <p class="sub">Search 7,800 foods from the USDA database and log what you eat — Fatgo counts it against your daily targets.</p>
+    <div class="card">
+      <input type="search" id="food-search" placeholder="Search foods… e.g. chicken breast roasted">
+      <div id="food-results"></div>
+      <div id="intake-bars"></div>
+      <ul id="intake-list" class="food-list"></ul>
+      <p class="fine" id="intake-hint">Nothing logged today yet. Search above to add your first food.</p>
+      <p class="fine">Nutrition data: <a href="https://fdc.nal.usda.gov/" target="_blank" rel="noopener">U.S. Department of Agriculture, FoodData Central</a> (public domain).</p>
+    </div>
+
     <!-- Weight log -->
     <h2>Track your progress</h2>
     <div class="card">
@@ -143,6 +155,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
