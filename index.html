@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -96,7 +96,24 @@
 
     <!-- Workouts -->
     <h2>This week's workouts</h2>
+    <p class="sub">Tap any exercise to see how it's done.</p>
     <div id="workout-list" class="workout-grid"></div>
+
+    <!-- Exercise library -->
+    <h2>Exercise library</h2>
+    <p class="sub">873 exercises with photo demos, target muscles, and step-by-step instructions. Filter by what you have and what you want to train.</p>
+    <div class="card">
+      <div class="lib-controls">
+        <input type="search" id="lib-search" placeholder="Search exercises…">
+        <select id="lib-muscle"><option value="">All muscles</option></select>
+        <select id="lib-equipment"><option value="">All equipment</option></select>
+        <select id="lib-level"><option value="">All levels</option></select>
+      </div>
+      <div id="lib-results" class="lib-grid"></div>
+      <button id="lib-more" class="ghost-btn lib-more hidden" type="button">Show more</button>
+      <p class="fine" id="lib-count"></p>
+      <p class="fine">Exercise data & photos: <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener">free-exercise-db</a> (open source).</p>
+    </div>
 
     <!-- Food -->
     <h2>What to eat</h2>
@@ -118,6 +135,14 @@
     <p class="fine disclaimer">Fatgo gives general fitness guidance, not medical advice.</p>
   </section>
 
-  <script src="app.js?v=2"></script>
+  <!-- Exercise detail modal -->
+  <div id="ex-modal" class="modal hidden">
+    <div class="modal-box card">
+      <button id="ex-close" class="ghost-btn modal-close" type="button" aria-label="Close">✕</button>
+      <div id="ex-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=3"></script>
 </body>
 </html>
