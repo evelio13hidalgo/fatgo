@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fatgo — lower your body fat, backed by data</title>
+  <link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="logo">Fat<span>go</span></div>
+    <button id="edit-profile-btn" class="ghost-btn hidden">Edit profile</button>
+  </header>
+
+  <!-- ============ SETUP / PROFILE ============ -->
+  <section id="setup" class="screen">
+    <h1>Let's build your plan</h1>
+    <p class="sub">Fatgo uses research-backed formulas to set your calories, macros, workouts, and eating schedule. Your data stays on this device.</p>
+
+    <form id="profile-form" class="card">
+      <div class="grid-2">
+        <label>Age
+          <input type="number" id="age" min="14" max="90" required placeholder="25">
+        </label>
+        <label>Sex
+          <select id="sex" required>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </label>
+        <label>Height
+          <span class="unit-toggle" data-for="height">
+            <button type="button" data-unit="cm" class="active">cm</button><button type="button" data-unit="ftin">ft/in</button>
+          </span>
+          <input type="number" id="height" min="120" max="230" step="0.1" required placeholder="175">
+          <div class="ftin hidden" id="height-ftin">
+            <input type="number" id="height-ft" min="3" max="7" placeholder="ft">
+            <input type="number" id="height-in" min="0" max="11.9" step="0.1" placeholder="in">
+          </div>
+        </label>
+        <label>Weight
+          <span class="unit-toggle" data-for="weight">
+            <button type="button" data-unit="kg" class="active">kg</button><button type="button" data-unit="lb">lb</button>
+          </span>
+          <input type="number" id="weight" min="35" max="250" step="0.1" required placeholder="82">
+        </label>
+        <label>Body fat % <span class="opt">(optional)</span>
+          <input type="number" id="bodyfat" min="4" max="60" step="0.5" placeholder="e.g. 24">
+        </label>
+        <label>Wake-up time
+          <input type="time" id="wake" value="07:00" required>
+        </label>
+      </div>
+
+      <label>Activity level (outside workouts)
+        <select id="activity" required>
+          <option value="1.2">Sedentary — desk job, little walking</option>
+          <option value="1.375" selected>Lightly active — some walking daily</option>
+          <option value="1.55">Moderately active — on my feet a lot</option>
+          <option value="1.725">Very active — physical job</option>
+        </select>
+      </label>
+
+      <label>Training days per week
+        <select id="days" required>
+          <option value="3" selected>3 days</option>
+          <option value="4">4 days</option>
+          <option value="5">5 days</option>
+        </select>
+      </label>
+
+      <button type="submit" class="primary-btn">Build my plan</button>
+    </form>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="dashboard" class="screen hidden">
+
+    <h1 id="greeting">Your plan</h1>
+    <p class="sub" id="goal-line"></p>
+
+    <!-- Targets -->
+    <div class="stat-row">
+      <div class="stat card"><div class="stat-num" id="stat-cals">—</div><div class="stat-label">calories / day</div></div>
+      <div class="stat card"><div class="stat-num" id="stat-protein">—</div><div class="stat-label">g protein</div></div>
+      <div class="stat card"><div class="stat-num" id="stat-fat">—</div><div class="stat-label">g fat</div></div>
+      <div class="stat card"><div class="stat-num" id="stat-carbs">—</div><div class="stat-label">g carbs</div></div>
+    </div>
+    <p class="fine" id="tdee-line"></p>
+
+    <!-- Daily timeline -->
+    <h2>Today's timeline</h2>
+    <p class="sub">Your metabolism runs 24/7 — these are the moments in the day that actually move the needle.</p>
+    <div class="card" id="timeline"></div>
+
+    <!-- Workouts -->
+    <h2>This week's workouts</h2>
+    <div id="workout-list" class="workout-grid"></div>
+
+    <!-- Food -->
+    <h2>What to eat</h2>
+    <div class="card">
+      <ul class="food-list" id="food-list"></ul>
+    </div>
+
+    <!-- Weight log -->
+    <h2>Track your progress</h2>
+    <div class="card">
+      <form id="log-form" class="log-row">
+        <input type="number" id="log-weight" step="0.1" min="35" max="250" placeholder="Today's weight (kg)" required>
+        <button type="submit" class="primary-btn">Log</button>
+      </form>
+      <canvas id="chart" width="800" height="240"></canvas>
+      <p class="fine" id="trend-line">Log your weight each morning (after the bathroom, before eating) — daily numbers bounce around, the trend is what counts.</p>
+    </div>
+
+    <p class="fine disclaimer">Fatgo gives general fitness guidance, not medical advice.</p>
+  </section>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>
