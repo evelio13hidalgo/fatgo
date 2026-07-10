@@ -13,9 +13,9 @@ function upgradeProfile(p) {
 
 const store = {
   getProfile: () => upgradeProfile(JSON.parse(localStorage.getItem("fatgo-profile") || "null")),
-  setProfile: (p) => localStorage.setItem("fatgo-profile", JSON.stringify(p)),
+  setProfile: (p) => { localStorage.setItem("fatgo-profile", JSON.stringify(p)); window.queueSync?.(); },
   getLog: () => JSON.parse(localStorage.getItem("fatgo-log") || "[]"),
-  setLog: (l) => localStorage.setItem("fatgo-log", JSON.stringify(l)),
+  setLog: (l) => { localStorage.setItem("fatgo-log", JSON.stringify(l)); window.queueSync?.(); },
 };
 
 /* ================= UNITS =================
@@ -92,6 +92,7 @@ document.querySelectorAll(".unit-toggle button").forEach((btn) => {
     }
 
     localStorage.setItem("fatgo-units", JSON.stringify(units));
+    window.queueSync?.();
     applyUnits();
     drawChart();
   });
@@ -602,7 +603,7 @@ function getIntake() {
   const it = JSON.parse(localStorage.getItem("fatgo-intake") || "null");
   return it && it.date === today ? it : { date: today, items: [] };
 }
-const setIntake = (it) => localStorage.setItem("fatgo-intake", JSON.stringify(it));
+const setIntake = (it) => { localStorage.setItem("fatgo-intake", JSON.stringify(it)); window.queueSync?.(); };
 
 function renderIntake() {
   const p = store.getProfile();
@@ -754,8 +755,14 @@ $("log-form").addEventListener("submit", (e) => {
   drawChart();
 });
 
-/* ================= INIT ================= */
+/* ================= INIT =================
+   auth.js decides when to enter the app (after the session check and, for
+   logged-in users, after cloud data has been written to localStorage). */
 
-applyUnits();
-const saved = store.getProfile();
-if (saved) showDashboard(saved);
+window.enterApp = () => {
+  units = JSON.parse(localStorage.getItem("fatgo-units") || '{"weight":"kg","height":"cm"}');
+  applyUnits();
+  const saved = store.getProfile();
+  if (saved) showDashboard(saved);
+  else $("setup").classList.remove("hidden");
+};

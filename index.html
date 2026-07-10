@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -17,11 +17,60 @@
       <a href="#food">Food</a>
       <a href="#progress">Progress</a>
     </nav>
-    <button id="edit-profile-btn" class="ghost-btn hidden">Edit profile</button>
+    <div class="account-row">
+      <span id="account-box" class="account-box hidden"></span>
+      <button id="edit-profile-btn" class="ghost-btn hidden">Edit profile</button>
+    </div>
   </header>
 
+  <!-- ============ LANDING / AUTH ============ -->
+  <section id="landing" class="screen hidden">
+    <div class="landing-grid">
+      <div class="landing-copy">
+        <h1 class="landing-title">Get lean.<br><span>Backed by data.</span></h1>
+        <p class="sub">Fatgo turns your stats into a complete fat-loss plan — daily calories and macros, workouts that fit your week, and a schedule for your day. Log your food, log your weight, watch the trend drop.</p>
+        <ul class="landing-points">
+          <li>Personal calorie &amp; macro targets from research-backed formulas</li>
+          <li>Workout plans your way — full body, upper/lower, push/pull/legs</li>
+          <li>873 exercises with photo demos and instructions</li>
+          <li>USDA food search and a daily intake ring</li>
+          <li>A weight chart that cuts through the daily noise</li>
+        </ul>
+      </div>
+
+      <div class="auth-card card">
+        <div class="auth-tabs" id="auth-tabs">
+          <button type="button" id="tab-login" class="active">Log in</button>
+          <button type="button" id="tab-signup">Sign up</button>
+        </div>
+        <form id="auth-form">
+          <label>Email
+            <input type="email" id="auth-email" required placeholder="you@example.com" autocomplete="email">
+          </label>
+          <label>Password
+            <input type="password" id="auth-pass" minlength="6" required placeholder="At least 6 characters" autocomplete="current-password">
+          </label>
+          <p class="fine auth-msg hidden" id="auth-msg"></p>
+          <button type="submit" class="primary-btn" id="auth-submit">Log in</button>
+        </form>
+        <div class="auth-divider"><span>or</span></div>
+        <button type="button" class="ghost-btn guest-btn" id="guest-btn">Try it without an account →</button>
+        <p class="fine" id="auth-note">Your account keeps your plan and progress in sync on every device.</p>
+      </div>
+    </div>
+
+    <div class="hero-strip">
+      <img src="assets/hero-1.jpg" alt="Man doing push-ups in a gym">
+      <img src="assets/hero-2.jpg" alt="Woman training with dumbbells">
+      <img src="assets/hero-3.jpg" alt="Lean athlete in dramatic lighting">
+      <img src="assets/hero-4.jpg" alt="Woman running through a sunny street">
+      <img src="assets/hero-5.jpg" alt="Couple jogging together">
+    </div>
+    <p class="fine strip-credit">Photos: <a href="https://www.pexels.com" target="_blank" rel="noopener">Pexels</a> (free license)</p>
+  </section>
+
   <!-- ============ SETUP / PROFILE ============ -->
-  <section id="setup" class="screen">
+  <section id="setup" class="screen hidden">
     <h1>Let's build your plan</h1>
     <p class="sub">Fatgo uses research-backed formulas to set your calories, macros, workouts, and eating schedule. Your data stays on this device.</p>
 
@@ -201,6 +250,8 @@
     </div>
   </div>
 
-  <script src="app.js?v=6"></script>
+  <script src="config.js?v=7"></script>
+  <script src="app.js?v=7"></script>
+  <script src="auth.js?v=7"></script>
 </body>
 </html>

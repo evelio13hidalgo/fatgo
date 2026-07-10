@@ -23,12 +23,34 @@ A note on "when metabolism kicks in": metabolism runs 24/7 — it doesn't switch
 
 ## Run it
 
-Open `index.html` in a browser. All data is stored locally in your browser (localStorage) — no account needed.
+Open `index.html` in a browser (or serve the folder with any static server). Without any setup it runs in **guest mode** — all data stays in the browser's localStorage.
+
+## Accounts (Supabase)
+
+Fatgo supports real logins with cross-device sync via [Supabase](https://supabase.com) (free tier):
+
+1. Create a project at supabase.com.
+2. In the SQL editor, run:
+
+   ```sql
+   create table public.fatgo_data (
+     user_id uuid primary key references auth.users(id) on delete cascade,
+     data jsonb not null default '{}'::jsonb,
+     updated_at timestamptz not null default now()
+   );
+   alter table public.fatgo_data enable row level security;
+   create policy "users manage own data" on public.fatgo_data
+     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   ```
+
+3. Copy the **Project URL** and **anon key** from Project Settings → API into `config.js`.
+
+With the keys in place the landing page offers sign up / log in; guest mode still works, and a guest's data is adopted into their account on first login.
 
 ## Later
 
 - Wrap with Capacitor to ship as an iOS/Android app.
-- Sync data to a backend so it works across devices.
+- Password reset flow + social logins.
 - Smarter algorithm: adjust calories weekly based on actual weight-trend data.
 
 ## Disclaimer
