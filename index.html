@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -55,10 +55,25 @@
         <label>Body fat % <span class="opt">(optional)</span>
           <input type="number" id="bodyfat" min="4" max="60" step="0.5" placeholder="e.g. 24">
         </label>
-        <label>Wake-up time
+        <label>Wake-up — work days
           <input type="time" id="wake" value="07:00" required>
         </label>
+        <label>Wake-up — days off
+          <input type="time" id="wake-off" value="09:00" required>
+        </label>
       </div>
+
+      <label>Which days are your days off?
+        <div class="day-picker" id="offdays">
+          <button type="button" data-day="1">Mon</button>
+          <button type="button" data-day="2">Tue</button>
+          <button type="button" data-day="3">Wed</button>
+          <button type="button" data-day="4">Thu</button>
+          <button type="button" data-day="5">Fri</button>
+          <button type="button" data-day="6" class="active">Sat</button>
+          <button type="button" data-day="0" class="active">Sun</button>
+        </div>
+      </label>
 
       <label>Activity level (outside workouts)
         <select id="activity" required>
@@ -74,6 +89,15 @@
           <option value="3" selected>3 days</option>
           <option value="4">4 days</option>
           <option value="5">5 days</option>
+        </select>
+      </label>
+
+      <label>Workout style
+        <select id="split" required>
+          <option value="full" selected>Full body — best for beginners</option>
+          <option value="ul">Upper / Lower split</option>
+          <option value="ppl">Push / Pull / Legs</option>
+          <option value="bro">Bro split — one muscle group per day</option>
         </select>
       </label>
 
@@ -110,11 +134,15 @@
     <!-- Daily timeline -->
     <h2>Today's timeline</h2>
     <p class="sub">Your metabolism runs 24/7 — these are the moments in the day that actually move the needle.</p>
+    <div class="tl-tabs hidden" id="tl-tabs">
+      <button type="button" class="tab" id="tl-tab-work" data-tl="work"></button>
+      <button type="button" class="tab" id="tl-tab-off" data-tl="off"></button>
+    </div>
     <div class="card" id="timeline"></div>
 
     <!-- Workouts -->
     <h2 id="workouts">This week's workouts</h2>
-    <p class="sub">Tap any exercise to see how it's done.</p>
+    <p class="sub" id="workout-sub">Tap any exercise to see how it's done.</p>
     <div id="workout-list" class="workout-grid"></div>
 
     <!-- Exercise library -->
@@ -173,6 +201,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

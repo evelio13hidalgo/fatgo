@@ -215,6 +215,45 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 }
 .ghost-btn:hover { color: var(--text); border-color: var(--muted); }
 
+/* --- days-off picker --- */
+.day-picker { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.day-picker button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.day-picker button:hover { border-color: var(--muted); }
+.day-picker button.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* --- timeline schedule tabs --- */
+.tl-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tl-tabs .tab {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.tl-tabs .tab:hover { color: var(--text); border-color: var(--muted); }
+.tl-tabs .tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* --- stats --- */
 .stat-row {
   display: grid;

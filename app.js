@@ -2,8 +2,17 @@
 
 const $ = (id) => document.getElementById(id);
 
+// Profiles saved before schedules/splits existed get sensible defaults.
+function upgradeProfile(p) {
+  if (!p) return p;
+  if (!p.wakeOff) p.wakeOff = p.wake;
+  if (!p.offDays) p.offDays = [6, 0];
+  if (!p.split) p.split = "full";
+  return p;
+}
+
 const store = {
-  getProfile: () => JSON.parse(localStorage.getItem("fatgo-profile") || "null"),
+  getProfile: () => upgradeProfile(JSON.parse(localStorage.getItem("fatgo-profile") || "null")),
   setProfile: (p) => localStorage.setItem("fatgo-profile", JSON.stringify(p)),
   getLog: () => JSON.parse(localStorage.getItem("fatgo-log") || "[]"),
   setLog: (l) => localStorage.setItem("fatgo-log", JSON.stringify(l)),
@@ -120,8 +129,7 @@ function addMinutes(hhmm, mins) {
   return `${hh}:${mm}`;
 }
 
-function timeline(p) {
-  const w = p.wake;
+function timeline(w) {
   return [
     { time: w, what: "Wake up — weigh yourself, drink water", why: "Morning weight (before food) is your most consistent data point." },
     { time: addMinutes(w, 60), what: "First meal — high protein", why: "Protein has the highest thermic effect: your body burns ~20-30% of its calories just digesting it. This is the closest thing to 'kick-starting' your metabolism." },
@@ -132,6 +140,42 @@ function timeline(p) {
     { time: addMinutes(w, 960), what: "Sleep — aim for 7-9h", why: "Studies show short sleep makes the weight you lose come from muscle instead of fat." },
   ];
 }
+
+/* Two schedules: work days and days off, each with its own wake-up time.
+   p.offDays holds getDay() indices (Sun=0). The tab matching today opens first. */
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const dayList = (days) =>
+  [1, 2, 3, 4, 5, 6, 0].filter((d) => days.includes(d)).map((d) => DAY_NAMES[d]).join(" · ");
+
+let tlView = null; // "work" | "off" — which schedule the timeline shows
+
+function renderTimeline(p) {
+  const offDays = p.offDays || [];
+  const workDays = [0, 1, 2, 3, 4, 5, 6].filter((d) => !offDays.includes(d));
+  const bothUsed = offDays.length > 0 && workDays.length > 0;
+
+  if (!tlView) tlView = offDays.includes(new Date().getDay()) ? "off" : "work";
+  if (!bothUsed) tlView = workDays.length ? "work" : "off";
+
+  $("tl-tabs").classList.toggle("hidden", !bothUsed);
+  $("tl-tab-work").textContent = `Work days — up at ${p.wake} (${dayList(workDays)})`;
+  $("tl-tab-off").textContent = `Days off — up at ${p.wakeOff} (${dayList(offDays)})`;
+  $("tl-tab-work").classList.toggle("active", tlView === "work");
+  $("tl-tab-off").classList.toggle("active", tlView === "off");
+
+  const wake = tlView === "off" ? p.wakeOff : p.wake;
+  $("timeline").innerHTML = timeline(wake)
+    .map((s) => `<div class="tl-item"><div class="tl-time">${s.time}</div><div><div class="tl-what">${s.what}</div><div class="tl-why">${s.why}</div></div></div>`)
+    .join("");
+}
+
+$("tl-tabs").addEventListener("click", (evt) => {
+  const tab = evt.target.closest("[data-tl]");
+  if (!tab || tab.dataset.tl === tlView) return;
+  tlView = tab.dataset.tl;
+  renderTimeline(store.getProfile());
+});
 
 /* ================= WORKOUTS ================= */
 
@@ -166,33 +210,114 @@ const LIFTS = {
     `${ex("Leg Press", "Leg press")} — 3×12`,
     `${ex("Standing Calf Raises", "Calf raises")} + core — 3×15`,
   ],
+  push: [
+    `${ex("Barbell Bench Press - Medium Grip", "Bench press")} — 4×8`,
+    `${ex("Standing Military Press", "Overhead press")} — 3×10`,
+    `${ex("Incline Dumbbell Press", "Incline dumbbell press")} — 3×10`,
+    `${ex("Side Lateral Raise", "Lateral raises")} — 3×15`,
+    `${ex("Triceps Pushdown", "Triceps pushdown")} — 3×12`,
+  ],
+  pull: [
+    `${ex("Barbell Deadlift", "Deadlift")} — 3×6`,
+    `${ex("Full Range-Of-Motion Lat Pulldown", "Lat pulldown")} or ${ex("Pullups", "pull-ups")} — 3×10`,
+    `${ex("Seated Cable Rows", "Cable row")} — 3×10`,
+    `${ex("Face Pull", "Face pulls")} — 3×15`,
+    `${ex("Barbell Curl", "Curls")} — 3×12`,
+  ],
+  legs: [
+    `${ex("Barbell Squat", "Squat")} — 3×8`,
+    `${ex("Romanian Deadlift", "Romanian deadlift")} — 3×10`,
+    `${ex("Leg Press", "Leg press")} — 3×12`,
+    `${ex("Lying Leg Curls", "Leg curls")} — 3×12`,
+    `${ex("Standing Calf Raises", "Calf raises")} — 3×15`,
+  ],
+  chest: [
+    `${ex("Barbell Bench Press - Medium Grip", "Bench press")} — 4×8`,
+    `${ex("Incline Dumbbell Press", "Incline dumbbell press")} — 3×10`,
+    `${ex("Dumbbell Flyes", "Dumbbell flyes")} — 3×12`,
+    `${ex("Cable Crossover", "Cable crossover")} or ${ex("Pushups", "push-ups")} — 2×15`,
+  ],
+  back: [
+    `${ex("Barbell Deadlift", "Deadlift")} — 3×6`,
+    `${ex("Full Range-Of-Motion Lat Pulldown", "Lat pulldown")} or ${ex("Pullups", "pull-ups")} — 3×10`,
+    `${ex("Bent Over Barbell Row", "Bent-over row")} — 3×10`,
+    `${ex("Seated Cable Rows", "Cable row")} — 3×12`,
+  ],
+  shoulders: [
+    `${ex("Standing Military Press", "Overhead press")} — 4×8`,
+    `${ex("Side Lateral Raise", "Lateral raises")} — 3×15`,
+    `${ex("Front Dumbbell Raise", "Front raises")} — 3×12`,
+    `${ex("Reverse Flyes", "Reverse flyes")} — 3×15`,
+  ],
+  arms: [
+    `${ex("Barbell Curl", "Barbell curls")} — 3×10`,
+    `${ex("Close-Grip Barbell Bench Press", "Close-grip bench")} — 3×10`,
+    `${ex("Hammer Curls", "Hammer curls")} — 3×12`,
+    `${ex("Triceps Pushdown", "Triceps pushdown")} — 3×12`,
+    `${ex("Bench Dips", "Bench dips")} — 2×max`,
+  ],
+  chestTri: [
+    `${ex("Barbell Bench Press - Medium Grip", "Bench press")} — 4×8`,
+    `${ex("Incline Dumbbell Press", "Incline dumbbell press")} — 3×10`,
+    `${ex("Dumbbell Flyes", "Dumbbell flyes")} — 3×12`,
+    `${ex("Triceps Pushdown", "Triceps pushdown")} — 3×12`,
+  ],
+  backBi: [
+    `${ex("Barbell Deadlift", "Deadlift")} — 3×6`,
+    `${ex("Full Range-Of-Motion Lat Pulldown", "Lat pulldown")} or ${ex("Pullups", "pull-ups")} — 3×10`,
+    `${ex("Seated Cable Rows", "Cable row")} — 3×10`,
+    `${ex("Barbell Curl", "Curls")} — 3×12`,
+  ],
+  legsShoulders: [
+    `${ex("Barbell Squat", "Squat")} — 3×8`,
+    `${ex("Romanian Deadlift", "Romanian deadlift")} — 3×10`,
+    `${ex("Standing Military Press", "Overhead press")} — 3×10`,
+    `${ex("Side Lateral Raise", "Lateral raises")} — 3×15`,
+  ],
+  shouldersArms: [
+    `${ex("Standing Military Press", "Overhead press")} — 4×8`,
+    `${ex("Side Lateral Raise", "Lateral raises")} — 3×15`,
+    `${ex("Barbell Curl", "Curls")} — 3×12`,
+    `${ex("Triceps Pushdown", "Triceps pushdown")} — 3×12`,
+  ],
   cardio: ["30-40 min brisk walk, incline treadmill, or cycling (zone 2 — you can still talk)"],
 };
 
-function workoutPlan(days) {
+const SPLIT_NOTES = {
+  full: "Full body 3×/week is the most evidence-backed way to start — every muscle gets trained often.",
+  ul: "Upper / Lower — each half of the body gets hit twice a week with more exercises per session.",
+  ppl: "Push / Pull / Legs — pushing muscles, pulling muscles, and legs each get their own day.",
+  bro: "Bro split — one muscle group per session, maximum volume and focus per body part.",
+};
+
+function workoutPlan(days, split) {
+  const d = (day, name, items) => ({ day, name, items });
+  const L = LIFTS;
+  const cardio = (day) => d(day, "Easy cardio", L.cardio);
   const plans = {
-    3: [
-      { day: "Mon", name: "Full body A", items: LIFTS.fullA },
-      { day: "Wed", name: "Full body B", items: LIFTS.fullB },
-      { day: "Fri", name: "Full body A", items: LIFTS.fullA },
-      { day: "Sat", name: "Easy cardio", items: LIFTS.cardio },
-    ],
-    4: [
-      { day: "Mon", name: "Upper body", items: LIFTS.upper },
-      { day: "Tue", name: "Lower body", items: LIFTS.lower },
-      { day: "Thu", name: "Upper body", items: LIFTS.upper },
-      { day: "Fri", name: "Lower body", items: LIFTS.lower },
-      { day: "Sun", name: "Easy cardio", items: LIFTS.cardio },
-    ],
-    5: [
-      { day: "Mon", name: "Upper body", items: LIFTS.upper },
-      { day: "Tue", name: "Lower body", items: LIFTS.lower },
-      { day: "Wed", name: "Easy cardio", items: LIFTS.cardio },
-      { day: "Thu", name: "Upper body", items: LIFTS.upper },
-      { day: "Fri", name: "Lower body", items: LIFTS.lower },
-    ],
+    full: {
+      3: [d("Mon", "Full body A", L.fullA), d("Wed", "Full body B", L.fullB), d("Fri", "Full body A", L.fullA), cardio("Sat")],
+      4: [d("Mon", "Full body A", L.fullA), d("Tue", "Full body B", L.fullB), d("Thu", "Full body A", L.fullA), d("Fri", "Full body B", L.fullB), cardio("Sun")],
+      5: [d("Mon", "Full body A", L.fullA), d("Tue", "Full body B", L.fullB), cardio("Wed"), d("Thu", "Full body A", L.fullA), d("Fri", "Full body B", L.fullB)],
+    },
+    ul: {
+      3: [d("Mon", "Upper body", L.upper), d("Wed", "Lower body", L.lower), d("Fri", "Upper body", L.upper), cardio("Sat")],
+      4: [d("Mon", "Upper body", L.upper), d("Tue", "Lower body", L.lower), d("Thu", "Upper body", L.upper), d("Fri", "Lower body", L.lower), cardio("Sun")],
+      5: [d("Mon", "Upper body", L.upper), d("Tue", "Lower body", L.lower), cardio("Wed"), d("Thu", "Upper body", L.upper), d("Fri", "Lower body", L.lower)],
+    },
+    ppl: {
+      3: [d("Mon", "Push", L.push), d("Wed", "Pull", L.pull), d("Fri", "Legs", L.legs), cardio("Sat")],
+      4: [d("Mon", "Push", L.push), d("Tue", "Pull", L.pull), d("Thu", "Legs", L.legs), d("Fri", "Upper body", L.upper), cardio("Sun")],
+      5: [d("Mon", "Push", L.push), d("Tue", "Pull", L.pull), d("Wed", "Legs", L.legs), d("Fri", "Upper body", L.upper), d("Sat", "Lower body", L.lower)],
+    },
+    bro: {
+      3: [d("Mon", "Chest & triceps", L.chestTri), d("Wed", "Back & biceps", L.backBi), d("Fri", "Legs & shoulders", L.legsShoulders), cardio("Sat")],
+      4: [d("Mon", "Chest", L.chest), d("Tue", "Back", L.back), d("Thu", "Shoulders & arms", L.shouldersArms), d("Fri", "Legs", L.legs), cardio("Sun")],
+      5: [d("Mon", "Chest", L.chest), d("Tue", "Back", L.back), d("Wed", "Legs", L.legs), d("Thu", "Shoulders", L.shoulders), d("Fri", "Arms", L.arms)],
+    },
   };
-  return plans[days] || plans[3];
+  const bySplit = plans[split] || plans.full;
+  return bySplit[days] || bySplit[3];
 }
 
 /* ================= FOOD ================= */
@@ -227,11 +352,10 @@ function showDashboard(p) {
   $("tdee-line").textContent =
     `Your body burns about ${t.maintenance} kcal/day at your current stats — eating ${t.calories} creates the deficit that forces it to burn fat instead.`;
 
-  $("timeline").innerHTML = timeline(p)
-    .map((s) => `<div class="tl-item"><div class="tl-time">${s.time}</div><div><div class="tl-what">${s.what}</div><div class="tl-why">${s.why}</div></div></div>`)
-    .join("");
+  renderTimeline(p);
 
-  $("workout-list").innerHTML = workoutPlan(Number(p.days))
+  $("workout-sub").textContent = `${SPLIT_NOTES[p.split] || SPLIT_NOTES.full} Tap any exercise to see how it's done.`;
+  $("workout-list").innerHTML = workoutPlan(Number(p.days), p.split)
     .map((wk) => `<div class="workout card"><div class="day-tag">${wk.day}</div><h3>${wk.name}</h3><ul>${wk.items.map((i) => `<li>${i}</li>`).join("")}</ul></div>`)
     .join("");
 
@@ -566,6 +690,15 @@ $("intake-list").addEventListener("click", (evt) => {
 
 /* ================= EVENTS ================= */
 
+// days-off picker: toggle chips, read the active ones on submit
+$("offdays").addEventListener("click", (evt) => {
+  const btn = evt.target.closest("[data-day]");
+  if (btn) btn.classList.toggle("active");
+});
+
+const readOffDays = () =>
+  [...document.querySelectorAll("#offdays button.active")].map((b) => Number(b.dataset.day));
+
 $("profile-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const p = {
@@ -575,10 +708,14 @@ $("profile-form").addEventListener("submit", (e) => {
     weight: displayToKg(Number($("weight").value)),
     bodyfat: Number($("bodyfat").value) || null,
     wake: $("wake").value,
+    wakeOff: $("wake-off").value,
+    offDays: readOffDays(),
     activity: Number($("activity").value),
     days: Number($("days").value),
+    split: $("split").value,
   };
   store.setProfile(p);
+  tlView = null; // re-pick the tab that matches today
   showDashboard(p);
   window.scrollTo(0, 0);
 });
@@ -592,8 +729,12 @@ $("edit-profile-btn").addEventListener("click", () => {
     $("weight").value = kgToDisplay(p.weight);
     $("bodyfat").value = p.bodyfat || "";
     $("wake").value = p.wake;
+    $("wake-off").value = p.wakeOff;
+    document.querySelectorAll("#offdays button").forEach((b) =>
+      b.classList.toggle("active", p.offDays.includes(Number(b.dataset.day))));
     $("activity").value = p.activity;
     $("days").value = p.days;
+    $("split").value = p.split;
   }
   $("dashboard").classList.add("hidden");
   $("setup").classList.remove("hidden");
