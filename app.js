@@ -3,11 +3,16 @@
 const $ = (id) => document.getElementById(id);
 
 // Profiles saved before schedules/splits existed get sensible defaults.
+const TRAINDAY_DEFAULTS = { 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 4, 5] };
+
 function upgradeProfile(p) {
   if (!p) return p;
   if (!p.wakeOff) p.wakeOff = p.wake;
   if (!p.offDays) p.offDays = [6, 0];
   if (!p.split) p.split = "full";
+  if (!p.trainDays) p.trainDays = TRAINDAY_DEFAULTS[p.days] || TRAINDAY_DEFAULTS[3];
+  if (!p.gymTime) p.gymTime = "18:00";
+  if (!p.pace) p.pace = 0.8;
   return p;
 }
 
@@ -111,9 +116,15 @@ function bmr(p) {
   return p.sex === "male" ? base + 5 : base - 161;
 }
 
+const PACE_LINES = {
+  0.9: "A relaxed ~10% deficit — slower fat loss, but the easiest plan to stay on.",
+  0.8: "A ~20% calorie deficit — built to lose roughly 0.5-1% of body weight per week while keeping muscle.",
+  0.75: "An aggressive ~25% deficit — faster results; protein and sleep matter even more here.",
+};
+
 function targets(p) {
   const maintenance = bmr(p) * p.activity;
-  const calories = Math.round(maintenance * 0.8); // ~20% deficit: fat loss while keeping muscle
+  const calories = Math.round(maintenance * (p.pace || 0.8)); // deficit size the user picked
   const protein = Math.round(p.weight * 1.8);     // 1.8 g/kg preserves lean mass in a deficit
   const fat = Math.round((calories * 0.25) / 9);  // 25% of calories from fat
   const carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
@@ -130,16 +141,23 @@ function addMinutes(hhmm, mins) {
   return `${hh}:${mm}`;
 }
 
-function timeline(w) {
+// trainAt: minutes after wake-up when the user can actually train (from their
+// after-work availability on work days). Meals after training shift with it.
+function timeline(w, trainAt, trainWhy) {
+  const dinnerAt = trainAt + 90;
+  const kitchenAt = Math.max(840, dinnerAt + 60);
+  const sleepAt = Math.max(960, kitchenAt + 90);
   return [
-    { time: w, what: "Wake up — weigh yourself, drink water", why: "Morning weight (before food) is your most consistent data point." },
-    { time: addMinutes(w, 60), what: "First meal — high protein", why: "Protein has the highest thermic effect: your body burns ~20-30% of its calories just digesting it. This is the closest thing to 'kick-starting' your metabolism." },
-    { time: addMinutes(w, 300), what: "Lunch — protein + carbs + veg", why: "Keeps energy stable and hunger down through the afternoon." },
-    { time: addMinutes(w, 540), what: "Train (on workout days)", why: "Late afternoon is when strength and body temperature peak for most people — you'll lift more and burn more." },
-    { time: addMinutes(w, 630), what: "Dinner — biggest protein hit + carbs", why: "Eating carbs after training refills muscle fuel instead of being stored as fat." },
-    { time: addMinutes(w, 840), what: "Kitchen closed", why: "Stopping ~2-3h before bed improves sleep, and poor sleep raises hunger hormones the next day." },
-    { time: addMinutes(w, 960), what: "Sleep — aim for 7-9h", why: "Studies show short sleep makes the weight you lose come from muscle instead of fat." },
-  ];
+    { at: 0, what: "Wake up — weigh yourself, drink water", why: "Morning weight (before food) is your most consistent data point." },
+    { at: 60, what: "First meal — high protein", why: "Protein has the highest thermic effect: your body burns ~20-30% of its calories just digesting it. This is the closest thing to 'kick-starting' your metabolism." },
+    { at: 300, what: "Lunch — protein + carbs + veg", why: "Keeps energy stable and hunger down through the afternoon." },
+    { at: trainAt, what: "Train (on training days)", why: trainWhy },
+    { at: dinnerAt, what: "Dinner — biggest protein hit + carbs", why: "Eating carbs after training refills muscle fuel instead of being stored as fat." },
+    { at: kitchenAt, what: "Kitchen closed", why: "Stopping ~2-3h before bed improves sleep, and poor sleep raises hunger hormones the next day." },
+    { at: sleepAt, what: "Sleep — aim for 7-9h", why: "Studies show short sleep makes the weight you lose come from muscle instead of fat." },
+  ]
+    .sort((a, b) => a.at - b.at)
+    .map((s) => ({ time: addMinutes(w, s.at), what: s.what, why: s.why }));
 }
 
 /* Two schedules: work days and days off, each with its own wake-up time.
@@ -166,7 +184,15 @@ function renderTimeline(p) {
   $("tl-tab-off").classList.toggle("active", tlView === "off");
 
   const wake = tlView === "off" ? p.wakeOff : p.wake;
-  $("timeline").innerHTML = timeline(wake)
+  const toMins = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+  // work days: train when the user said they're free after work; days off: late afternoon
+  const trainAt = tlView === "off"
+    ? 540
+    : (toMins(p.gymTime) - toMins(p.wake) + 1440) % 1440;
+  const trainWhy = tlView === "off"
+    ? "Late afternoon is when strength and body temperature peak for most people — you'll lift more and burn more."
+    : `You said you're free around ${p.gymTime} after work — a consistent slot you can actually hit beats a 'perfect' one you skip.`;
+  $("timeline").innerHTML = timeline(wake, trainAt, trainWhy)
     .map((s) => `<div class="tl-item"><div class="tl-time">${s.time}</div><div><div class="tl-what">${s.what}</div><div class="tl-why">${s.why}</div></div></div>`)
     .join("");
 }
@@ -291,34 +317,39 @@ const SPLIT_NOTES = {
   bro: "Bro split — one muscle group per session, maximum volume and focus per body part.",
 };
 
-function workoutPlan(days, split) {
-  const d = (day, name, items) => ({ day, name, items });
+// Sessions are defined per split and per week-count, then mapped onto the
+// days the user actually picked — no more hardcoded Mon/Wed/Fri.
+function workoutPlan(p) {
+  const s = (name, items) => ({ name, items });
   const L = LIFTS;
-  const cardio = (day) => d(day, "Easy cardio", L.cardio);
-  const plans = {
+  const sessions = {
     full: {
-      3: [d("Mon", "Full body A", L.fullA), d("Wed", "Full body B", L.fullB), d("Fri", "Full body A", L.fullA), cardio("Sat")],
-      4: [d("Mon", "Full body A", L.fullA), d("Tue", "Full body B", L.fullB), d("Thu", "Full body A", L.fullA), d("Fri", "Full body B", L.fullB), cardio("Sun")],
-      5: [d("Mon", "Full body A", L.fullA), d("Tue", "Full body B", L.fullB), cardio("Wed"), d("Thu", "Full body A", L.fullA), d("Fri", "Full body B", L.fullB)],
+      3: [s("Full body A", L.fullA), s("Full body B", L.fullB), s("Full body A", L.fullA)],
+      4: [s("Full body A", L.fullA), s("Full body B", L.fullB), s("Full body A", L.fullA), s("Full body B", L.fullB)],
+      5: [s("Full body A", L.fullA), s("Full body B", L.fullB), s("Easy cardio", L.cardio), s("Full body A", L.fullA), s("Full body B", L.fullB)],
     },
     ul: {
-      3: [d("Mon", "Upper body", L.upper), d("Wed", "Lower body", L.lower), d("Fri", "Upper body", L.upper), cardio("Sat")],
-      4: [d("Mon", "Upper body", L.upper), d("Tue", "Lower body", L.lower), d("Thu", "Upper body", L.upper), d("Fri", "Lower body", L.lower), cardio("Sun")],
-      5: [d("Mon", "Upper body", L.upper), d("Tue", "Lower body", L.lower), cardio("Wed"), d("Thu", "Upper body", L.upper), d("Fri", "Lower body", L.lower)],
+      3: [s("Upper body", L.upper), s("Lower body", L.lower), s("Upper body", L.upper)],
+      4: [s("Upper body", L.upper), s("Lower body", L.lower), s("Upper body", L.upper), s("Lower body", L.lower)],
+      5: [s("Upper body", L.upper), s("Lower body", L.lower), s("Easy cardio", L.cardio), s("Upper body", L.upper), s("Lower body", L.lower)],
     },
     ppl: {
-      3: [d("Mon", "Push", L.push), d("Wed", "Pull", L.pull), d("Fri", "Legs", L.legs), cardio("Sat")],
-      4: [d("Mon", "Push", L.push), d("Tue", "Pull", L.pull), d("Thu", "Legs", L.legs), d("Fri", "Upper body", L.upper), cardio("Sun")],
-      5: [d("Mon", "Push", L.push), d("Tue", "Pull", L.pull), d("Wed", "Legs", L.legs), d("Fri", "Upper body", L.upper), d("Sat", "Lower body", L.lower)],
+      3: [s("Push", L.push), s("Pull", L.pull), s("Legs", L.legs)],
+      4: [s("Push", L.push), s("Pull", L.pull), s("Legs", L.legs), s("Upper body", L.upper)],
+      5: [s("Push", L.push), s("Pull", L.pull), s("Legs", L.legs), s("Upper body", L.upper), s("Lower body", L.lower)],
     },
     bro: {
-      3: [d("Mon", "Chest & triceps", L.chestTri), d("Wed", "Back & biceps", L.backBi), d("Fri", "Legs & shoulders", L.legsShoulders), cardio("Sat")],
-      4: [d("Mon", "Chest", L.chest), d("Tue", "Back", L.back), d("Thu", "Shoulders & arms", L.shouldersArms), d("Fri", "Legs", L.legs), cardio("Sun")],
-      5: [d("Mon", "Chest", L.chest), d("Tue", "Back", L.back), d("Wed", "Legs", L.legs), d("Thu", "Shoulders", L.shoulders), d("Fri", "Arms", L.arms)],
+      3: [s("Chest & triceps", L.chestTri), s("Back & biceps", L.backBi), s("Legs & shoulders", L.legsShoulders)],
+      4: [s("Chest", L.chest), s("Back", L.back), s("Shoulders & arms", L.shouldersArms), s("Legs", L.legs)],
+      5: [s("Chest", L.chest), s("Back", L.back), s("Legs", L.legs), s("Shoulders", L.shoulders), s("Arms", L.arms)],
     },
   };
-  const bySplit = plans[split] || plans.full;
-  return bySplit[days] || bySplit[3];
+  const bySplit = sessions[p.split] || sessions.full;
+  const days = [1, 2, 3, 4, 5, 6, 0].filter((d) => p.trainDays.includes(d)); // Mon-first
+  const n = Math.min(Math.max(days.length, 3), 5);
+  const cards = bySplit[n].map((sess, i) => ({ dayIdx: days[i], day: DAY_NAMES[days[i]], ...sess }));
+  if (n <= 4) cards.push({ dayIdx: -1, day: "Any rest day", name: "Easy cardio (optional)", items: L.cardio });
+  return cards;
 }
 
 /* ================= FOOD ================= */
@@ -344,8 +375,7 @@ function showDashboard(p) {
 
   const t = targets(p);
 
-  $("goal-line").textContent =
-    `A ~20% calorie deficit — built to lose roughly 0.5-1% of body weight per week while keeping muscle.`;
+  $("goal-line").textContent = PACE_LINES[p.pace] || PACE_LINES[0.8];
   $("stat-cals").textContent = t.calories;
   $("stat-protein").textContent = t.protein;
   $("stat-fat").textContent = t.fat;
@@ -355,9 +385,16 @@ function showDashboard(p) {
 
   renderTimeline(p);
 
-  $("workout-sub").textContent = `${SPLIT_NOTES[p.split] || SPLIT_NOTES.full} Tap any exercise to see how it's done.`;
-  $("workout-list").innerHTML = workoutPlan(Number(p.days), p.split)
-    .map((wk) => `<div class="workout card"><div class="day-tag">${wk.day}</div><h3>${wk.name}</h3><ul>${wk.items.map((i) => `<li>${i}</li>`).join("")}</ul></div>`)
+  const plan = workoutPlan(p);
+  const todayIdx = new Date().getDay();
+  const todays = plan.find((wk) => wk.dayIdx === todayIdx);
+  const todayLine = todays
+    ? `Today is ${DAY_NAMES[todayIdx]} — ${todays.name} day.`
+    : `Today is ${DAY_NAMES[todayIdx]} — rest day, recovery is where muscle is built.`;
+  $("workout-sub").textContent =
+    `${todayLine} ${SPLIT_NOTES[p.split] || SPLIT_NOTES.full} Tap any exercise to see how it's done.`;
+  $("workout-list").innerHTML = plan
+    .map((wk) => `<div class="workout card${wk.dayIdx === todayIdx ? " today" : ""}"><div class="day-tag">${wk.day}${wk.dayIdx === todayIdx ? " · today" : ""}</div><h3>${wk.name}</h3><ul>${wk.items.map((i) => `<li>${i}</li>`).join("")}</ul></div>`)
     .join("");
 
   $("food-list").innerHTML = foodTips(t).map((f) => `<li>${f}</li>`).join("");
@@ -691,17 +728,25 @@ $("intake-list").addEventListener("click", (evt) => {
 
 /* ================= EVENTS ================= */
 
-// days-off picker: toggle chips, read the active ones on submit
-$("offdays").addEventListener("click", (evt) => {
-  const btn = evt.target.closest("[data-day]");
-  if (btn) btn.classList.toggle("active");
-});
+// day pickers (days off + training days): toggle chips, read the active ones on submit
+["offdays", "traindays"].forEach((id) =>
+  $(id).addEventListener("click", (evt) => {
+    const btn = evt.target.closest("[data-day]");
+    if (btn) btn.classList.toggle("active");
+    if (id === "traindays") $("traindays-msg").classList.add("hidden");
+  }));
 
-const readOffDays = () =>
-  [...document.querySelectorAll("#offdays button.active")].map((b) => Number(b.dataset.day));
+const readDays = (id) =>
+  [...document.querySelectorAll(`#${id} button.active`)].map((b) => Number(b.dataset.day));
 
 $("profile-form").addEventListener("submit", (e) => {
   e.preventDefault();
+  const trainDays = readDays("traindays");
+  if (trainDays.length < 3 || trainDays.length > 5) {
+    $("traindays-msg").classList.remove("hidden");
+    $("traindays-msg").scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
   const p = {
     age: Number($("age").value),
     sex: $("sex").value,
@@ -710,10 +755,13 @@ $("profile-form").addEventListener("submit", (e) => {
     bodyfat: Number($("bodyfat").value) || null,
     wake: $("wake").value,
     wakeOff: $("wake-off").value,
-    offDays: readOffDays(),
+    gymTime: $("gym-time").value,
+    offDays: readDays("offdays"),
     activity: Number($("activity").value),
-    days: Number($("days").value),
+    days: trainDays.length,
+    trainDays,
     split: $("split").value,
+    pace: Number($("pace").value),
   };
   store.setProfile(p);
   tlView = null; // re-pick the tab that matches today
@@ -731,11 +779,14 @@ $("edit-profile-btn").addEventListener("click", () => {
     $("bodyfat").value = p.bodyfat || "";
     $("wake").value = p.wake;
     $("wake-off").value = p.wakeOff;
+    $("gym-time").value = p.gymTime;
     document.querySelectorAll("#offdays button").forEach((b) =>
       b.classList.toggle("active", p.offDays.includes(Number(b.dataset.day))));
+    document.querySelectorAll("#traindays button").forEach((b) =>
+      b.classList.toggle("active", p.trainDays.includes(Number(b.dataset.day))));
     $("activity").value = p.activity;
-    $("days").value = p.days;
     $("split").value = p.split;
+    $("pace").value = String(p.pace);
   }
   $("dashboard").classList.add("hidden");
   $("setup").classList.remove("hidden");

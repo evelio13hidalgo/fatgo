@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fatgo — lower your body fat, backed by data</title>
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -39,6 +39,11 @@
       </div>
 
       <div class="auth-card card">
+        <div id="auth-welcome" class="auth-welcome hidden">
+          <p class="welcome-line" id="welcome-line"></p>
+          <button type="button" class="primary-btn" id="continue-btn">Continue to your dashboard →</button>
+          <button type="button" class="ghost-btn" id="welcome-logout">Log out</button>
+        </div>
         <div class="auth-tabs" id="auth-tabs">
           <button type="button" id="tab-login" class="active">Log in</button>
           <button type="button" id="tab-signup">Sign up</button>
@@ -110,6 +115,16 @@
         <label>Wake-up — days off
           <input type="time" id="wake-off" value="09:00" required>
         </label>
+        <label>When are you free to train after work?
+          <input type="time" id="gym-time" value="18:00" required>
+        </label>
+        <label>How fast do you want to go?
+          <select id="pace" required>
+            <option value="0.9">Relaxed — smaller deficit, easier to stick to</option>
+            <option value="0.8" selected>Standard — steady fat loss</option>
+            <option value="0.75">Aggressive — faster, takes discipline</option>
+          </select>
+        </label>
       </div>
 
       <label>Which days are your days off?
@@ -133,12 +148,17 @@
         </select>
       </label>
 
-      <label>Training days per week
-        <select id="days" required>
-          <option value="3" selected>3 days</option>
-          <option value="4">4 days</option>
-          <option value="5">5 days</option>
-        </select>
+      <label>Which days do you want to train? <span class="opt">(pick 3–5)</span>
+        <div class="day-picker" id="traindays">
+          <button type="button" data-day="1" class="active">Mon</button>
+          <button type="button" data-day="2">Tue</button>
+          <button type="button" data-day="3" class="active">Wed</button>
+          <button type="button" data-day="4">Thu</button>
+          <button type="button" data-day="5" class="active">Fri</button>
+          <button type="button" data-day="6">Sat</button>
+          <button type="button" data-day="0">Sun</button>
+        </div>
+        <p class="fine picker-msg hidden" id="traindays-msg">Pick between 3 and 5 training days.</p>
       </label>
 
       <label>Workout style
@@ -250,8 +270,8 @@
     </div>
   </div>
 
-  <script src="config.js?v=7"></script>
-  <script src="app.js?v=7"></script>
-  <script src="auth.js?v=7"></script>
+  <script src="config.js?v=8"></script>
+  <script src="app.js?v=8"></script>
+  <script src="auth.js?v=8"></script>
 </body>
 </html>

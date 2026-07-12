@@ -1,6 +1,7 @@
 /* Fatgo accounts + cloud sync (Supabase).
-   Boot flow: session → hydrate from cloud and enter app; guest flag → enter app
-   on local data only; otherwise show the landing screen.
+   Boot flow: the landing page ALWAYS shows first. A logged-in session gets a
+   one-click "Continue" (hydrating from the cloud); local guest data gets a
+   "Continue on this device" button; the app is only entered from the landing.
    Without Supabase keys in config.js everything still works in guest mode. */
 
 const SYNC_KEYS = ["fatgo-profile", "fatgo-log", "fatgo-intake", "fatgo-units"];
@@ -104,11 +105,32 @@ function showLanding() {
   $a("setup").classList.add("hidden");
   $a("dashboard").classList.add("hidden");
   $a("account-box").classList.add("hidden");
-  if (!cloudEnabled) {
+
+  const hasLocalData = !!localStorage.getItem("fatgo-profile");
+
+  if (session) {
+    // logged in: no form, just a one-click way back in
+    $a("auth-welcome").classList.remove("hidden");
+    $a("welcome-line").textContent = `Welcome back — logged in as ${session.user.email}`;
     $a("auth-form").classList.add("hidden");
     $a("auth-tabs").classList.add("hidden");
+    document.querySelector(".auth-divider").classList.add("hidden");
+    $a("guest-btn").classList.add("hidden");
+    $a("auth-note").textContent = "Your plan and progress sync to this account on every device.";
+    return;
+  }
+
+  $a("auth-welcome").classList.add("hidden");
+  if (!cloudEnabled) {
+    // no login form -> the "or" divider has nothing to divide
+    $a("auth-form").classList.add("hidden");
+    $a("auth-tabs").classList.add("hidden");
+    document.querySelector(".auth-divider").classList.add("hidden");
     $a("auth-note").textContent =
       "Accounts aren't switched on yet — jump in below and your data stays on this device.";
+  }
+  if (hasLocalData) {
+    $a("guest-btn").textContent = "Continue — your data is saved on this device →";
   }
 }
 
@@ -125,22 +147,24 @@ document.addEventListener("click", async (evt) => {
   if (evt.target.id === "tab-signup") setAuthMode("signup");
 
   if (evt.target.id === "guest-btn") {
-    localStorage.setItem("fatgo-guest", "1");
     enterAppFromAuth();
   }
 
-  if (evt.target.id === "logout-btn") {
+  // logged-in "Continue" on the landing page: pull cloud data, then enter
+  if (evt.target.id === "continue-btn") {
+    await hydrateFromCloud();
+    enterAppFromAuth();
+  }
+
+  if (evt.target.id === "logout-btn" || evt.target.id === "welcome-logout") {
     if (sb) await sb.auth.signOut();
     SYNC_KEYS.forEach((k) => localStorage.removeItem(k));
-    localStorage.removeItem("fatgo-guest");
+    localStorage.removeItem("fatgo-guest"); // clean up the old skip-landing flag
     location.reload();
   }
 
-  // guest → landing to sign in (local data is kept and adopted on first login).
-  // "0" = explicitly wants the landing page, so the pre-accounts migration
-  // below doesn't flip them back into guest mode.
+  // guest → landing to sign in (local data is kept and adopted on first login)
   if (evt.target.id === "to-login-btn") {
-    localStorage.setItem("fatgo-guest", "0");
     location.reload();
   }
 });
@@ -175,12 +199,6 @@ document.addEventListener("submit", async (evt) => {
 /* ---------- boot ---------- */
 
 (async function initAuth() {
-  // users from before accounts existed have a profile but the guest flag
-  // was never written at all ("0" means they explicitly chose the landing page)
-  if (localStorage.getItem("fatgo-profile") && localStorage.getItem("fatgo-guest") === null) {
-    localStorage.setItem("fatgo-guest", "1");
-  }
-
   if (cloudEnabled) {
     try {
       await loadScript(SUPABASE_CDN);
@@ -192,12 +210,6 @@ document.addEventListener("submit", async (evt) => {
     }
   }
 
-  if (session) {
-    await hydrateFromCloud();
-    enterAppFromAuth();
-  } else if (localStorage.getItem("fatgo-guest") === "1") {
-    enterAppFromAuth();
-  } else {
-    showLanding();
-  }
+  // the home page always comes first — never straight into someone's data
+  showLanding();
 })();
