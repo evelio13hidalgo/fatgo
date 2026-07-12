@@ -45,7 +45,7 @@ Fatgo supports real logins with cross-device sync via [Supabase](https://supabas
 
 3. Copy the **Project URL** and **anon key** from Project Settings → API into `config.js`.
 
-With the keys in place the landing page offers sign up / log in; guest mode still works, and a guest's data is adopted into their account on first login.
+With the keys in place, logging in is required — the landing page shows sign up / log in and there is no guest entry. Data saved earlier in guest mode is adopted into the account on first login.
 
 ## Later
 

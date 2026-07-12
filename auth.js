@@ -1,8 +1,8 @@
 /* Fatgo accounts + cloud sync (Supabase).
-   Boot flow: the landing page ALWAYS shows first. A logged-in session gets a
-   one-click "Continue" (hydrating from the cloud); local guest data gets a
-   "Continue on this device" button; the app is only entered from the landing.
-   Without Supabase keys in config.js everything still works in guest mode. */
+   Boot flow: the landing page ALWAYS shows first. With Supabase keys in
+   config.js, logging in is REQUIRED — a logged-in session gets a one-click
+   "Continue" (hydrating from the cloud), everyone else sees the login form.
+   Without keys the app falls back to device-only guest mode. */
 
 const SYNC_KEYS = ["fatgo-profile", "fatgo-log", "fatgo-intake", "fatgo-units"];
 const CFG = window.FATGO_CONFIG || {};
@@ -121,14 +121,19 @@ function showLanding() {
   }
 
   $a("auth-welcome").classList.add("hidden");
-  if (!cloudEnabled) {
-    // no login form -> the "or" divider has nothing to divide
-    $a("auth-form").classList.add("hidden");
-    $a("auth-tabs").classList.add("hidden");
+  if (cloudEnabled) {
+    // accounts are on: logging in is required — no guest side door
     document.querySelector(".auth-divider").classList.add("hidden");
-    $a("auth-note").textContent =
-      "Accounts aren't switched on yet — jump in below and your data stays on this device.";
+    $a("guest-btn").classList.add("hidden");
+    return;
   }
+
+  // no keys in config.js: guest mode is the only way in
+  $a("auth-form").classList.add("hidden");
+  $a("auth-tabs").classList.add("hidden");
+  document.querySelector(".auth-divider").classList.add("hidden");
+  $a("auth-note").textContent =
+    "Accounts aren't switched on yet — jump in below and your data stays on this device.";
   if (hasLocalData) {
     $a("guest-btn").textContent = "Continue — your data is saved on this device →";
   }
