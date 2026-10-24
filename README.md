@@ -25,6 +25,39 @@ A note on "when metabolism kicks in": metabolism runs 24/7 — it doesn't switch
 
 Open `index.html` in a browser (or serve the folder with any static server). Without any setup it runs in **guest mode** — all data stays in the browser's localStorage.
 
+## Project layout
+
+No build step, no dependencies — plain scripts sharing one global scope, listed
+in `index.html` in dependency order.
+
+```
+index.html      markup + the ordered <script> list
+config.js       your Supabase keys (empty = guest mode)
+css/style.css
+data/           vendored public-domain datasets (873 exercises, 7,793 foods)
+assets/         hero photos
+js/
+  core.js              $ helper, round1, DAY_NAMES — the cross-file basics
+  store.js             every localStorage read/write, + old-profile migration
+  units.js             kg/lb and cm/ft-in conversion, unit toggles
+  calculations.js      BMR (Katch-McArdle / Mifflin) and macro targets
+  timeline.js          the daily wake→sleep schedule, work vs off days
+  workouts.js          lift lists and the split→weekday session mapping
+  nutrition.js         the coaching copy for the food section
+  chart.js             weight-log canvas chart
+  exercise-library.js  exercises.json: search, filters, detail modal
+  food-log.js          foods.json: search, portions, today's intake
+  dashboard.js         assembles the main screen from everything above
+  forms.js             profile form + daily weigh-in
+  init.js              window.enterApp() — the entry point auth.js calls
+  auth.js              Supabase session handling and cloud sync
+```
+
+Two ordering rules, both noted in `index.html`: **core.js loads first** (its `$`
+helper runs at load time inside other files' event listeners) and **auth.js
+loads last** (it calls `window.enterApp()`, defined in `init.js`). Everything
+in between is function definitions, so the order there is just reading order.
+
 ## Accounts (Supabase)
 
 Fatgo supports real logins with cross-device sync via [Supabase](https://supabase.com) (free tier):
